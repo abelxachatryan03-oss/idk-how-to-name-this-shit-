@@ -19,7 +19,7 @@ jobs:
       - name: Install MinGW
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
 
-      - name: Build implant (32-bit)
+      - name: Build implant
         run: |
           i686-w64-mingw32-g++ -std=c++20 -O2 -static \
             -o implant.exe implant.cpp \
@@ -27,7 +27,7 @@ jobs:
             -luser32 -lgdi32 -lwinmm \
             -mwindows -Wl,-e,WinMainCRTStartup
 
-      - name: Build panel (64-bit)
+      - name: Build panel
         run: |
           x86_64-w64-mingw32-g++ -std=c++20 -O2 -static \
             -o panel.exe panel.cpp \
@@ -39,7 +39,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add -f implant.exe panel.exe
-          git diff --staged --quiet || git commit -m "ci: build exe [skip ci]"
+          git diff --staged --quiet && exit 0
+          git stash
           git fetch origin main
-          git rebase origin/main || git rebase --abort
+          git reset --hard origin/main
+          git stash pop
+          git add -f implant.exe panel.exe
+          git commit -m "ci: build exe [skip ci]"
           git push origin main
