@@ -21,13 +21,16 @@ jobs:
         run: |
           x86_64-w64-mingw32-g++ -std=c++20 -O2 -static \
             -o implant.exe implant.cpp \
-            -lwinhttp -lshell32 -ladvapi32 -mwindows -Wl,-e,WinMainCRTStartup
+            -lwinhttp -lshell32 -ladvapi32 -lole32 -luuid -lcrypt32 \
+            -luser32 -lgdi32 -lwinmm \
+            -mwindows -Wl,-e,WinMainCRTStartup
 
       - name: Build panel
         run: |
           x86_64-w64-mingw32-g++ -std=c++20 -O2 -static \
             -o panel.exe panel.cpp \
-            -lwinhttp -mconsole
+            -lwinhttp -lole32 -luuid \
+            -mconsole
 
       - name: Commit exe files
         run: |
@@ -35,4 +38,5 @@ jobs:
           git config user.email "actions@github.com"
           git add -f implant.exe panel.exe
           git diff --staged --quiet || git commit -m "ci: build exe [skip ci]"
+          git pull --rebase origin main || true
           git push
