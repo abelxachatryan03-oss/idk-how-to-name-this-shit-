@@ -1,10 +1,10 @@
 // language: C++, file: panel.cpp, target: Windows x64, MinGW
+#define NOMINMAX
 #include <windows.h>
 #include <winhttp.h>
 #include <string>
 #include <iostream>
 #include <vector>
-#pragma comment(lib, "winhttp.lib")
 
 static std::wstring Widen(const std::string& s) {
     if (s.empty()) return {};
@@ -32,7 +32,8 @@ static std::string HttpPost(const std::wstring& host, int port,
     std::string resp; DWORD avail, got; char buf[4096];
     do {
         if (!WinHttpQueryDataAvailable(r, &avail) || !avail) break;
-        if (!WinHttpReadData(r, buf, min(avail, sizeof(buf)), &got)) break;
+        DWORD chunk = (avail < sizeof(buf)) ? avail : (DWORD)sizeof(buf);
+        if (!WinHttpReadData(r, buf, chunk, &got)) break;
         resp.append(buf, got);
     } while (got);
     WinHttpCloseHandle(r); WinHttpCloseHandle(c); WinHttpCloseHandle(s);
@@ -54,7 +55,8 @@ static std::string HttpGet(const std::wstring& host, int port,
     std::string resp; DWORD avail, got; char buf[4096];
     do {
         if (!WinHttpQueryDataAvailable(r, &avail) || !avail) break;
-        if (!WinHttpReadData(r, buf, min(avail, sizeof(buf)), &got)) break;
+        DWORD chunk = (avail < sizeof(buf)) ? avail : (DWORD)sizeof(buf);
+        if (!WinHttpReadData(r, buf, chunk, &got)) break;
         resp.append(buf, got);
     } while (got);
     WinHttpCloseHandle(r); WinHttpCloseHandle(c); WinHttpCloseHandle(s);
@@ -75,6 +77,7 @@ static std::vector<std::string> ListImplants(const std::string& json) {
 }
 
 int main() {
+    // ПРАВЬ ЗДЕСЬ — впиши свой VPS и токен
     std::wstring HOST  = L"your-vps.example.net";
     int          PORT  = 8080;
     std::wstring TOKEN = L"CHANGE_ME_LONG_RANDOM";
